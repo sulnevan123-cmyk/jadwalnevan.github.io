@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Pro Dashboard - Sulthan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(16px); border: 1px solid rgba(56, 189, 248, 0.2); }
+        .glow-cyan { box-shadow: 0 0 25px rgba(56, 189, 248, 0.15); }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen pb-12">
+
+    <!-- Header & Live Clock -->
+    <header class="sticky top-0 z-50 glass border-b border-slate-800 px-4 py-3 flex justify-between items-center">
+        <div>
+            <h1 class="text-sm font-extrabold text-cyan-400 tracking-wider">⚡ SULTHAN DASHBOARD</h1>
+            <p id="live-time" class="text-[11px] text-slate-400">Memuat waktu...</p>
+        </div>
+        <div id="current-day-badge" class="bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 px-3 py-1 rounded-full text-xs font-bold">
+            Senin
+        </div>
+    </header>
+
+    <!-- Day Selector Tabs -->
+    <div class="px-4 py-3 bg-slate-900/80 border-b border-slate-800 overflow-x-auto flex gap-2 scrollbar-none">
+        <button onclick="setDay('Senin')" class="day-btn px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap bg-cyan-500 text-slate-950 transition-all">Senin</button>
+        <button onclick="setDay('Selasa')" class="day-btn px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">Selasa</button>
+        <button onclick="setDay('Rabu')" class="day-btn px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">Rabu</button>
+        <button onclick="setDay('Kamis')" class="day-btn px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">Kamis</button>
+        <button onclick="setDay('Jumat')" class="day-btn px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">Jumat</button>
+        <button onclick="setDay('Sabtu')" class="day-btn px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">Sabtu</button>
+        <button onclick="setDay('Minggu')" class="day-btn px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">Minggu</button>
+    </div>
+
+    <!-- Main Content Container -->
+    <main class="max-w-md mx-auto p-4 space-y-4">
+
+        <!-- Progress Card -->
+        <div class="glass p-4 rounded-2xl glow-cyan">
+            <div class="flex justify-between text-sm font-semibold mb-2">
+                <span id="progress-title" class="text-cyan-300">Progres Selesai</span>
+                <span id="progress-text" class="text-cyan-400 font-bold">0%</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                <div id="progress-bar" class="bg-cyan-400 h-full w-0 transition-all duration-500"></div>
+            </div>
+        </div>
+
+        <!-- Task List Container -->
+        <div id="task-list" class="space-y-3">
+            <!-- Dynamic Tasks -->
+        </div>
+
+        <!-- Extra Feature 1: Quick Notes -->
+        <div class="glass p-4 rounded-2xl space-y-2">
+            <h2 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">📝 Catatan Cepat / Memo Harian</h2>
+            <textarea id="quick-note" oninput="saveNote()" placeholder="Tulis pengingat atau ide tugas di sini..." class="w-full h-20 bg-slate-900/80 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 resize-none"></textarea>
+        </div>
+
+    </main>
+
+    <script>
+        // Data Jadwal Lengkap Senin s.d. Minggu (Tugas Pagi Full 7 Hari)
+        const scheduleData = {
+            "Senin": [
+                { time: "04.30 - 05.30", title: "Bangun & Sholat Subuh", desc: "Tugas Rumah: **Buang Sampah**" },
+                { time: "05.30 - 08.00", title: "Berangkat & Persiapan Kantor", desc: "Naik motor scooter ke kantor, ngopi santai." },
+                { time: "08.00 - 17.00", title: "Jam Kerja Pagi & Sore (PJK3)", desc: "Bikin sistem Excel, format laporan, & susun Suket K3." },
+                { time: "12.00 - 13.00", title: "Istirahat Siang & Micro-Learning", desc: "Makan siang + baca modul UT (15-20 menit)." },
+                { time: "17.00 - 18.30", title: "Transit & Persiapan ke Kampus", desc: "Pulang rumah, mandi, makan malam, ke Unrika." },
+                { time: "18.30 - 21.30", title: "Kuliah Offline di Unrika", desc: "Perkuliahan tatap muka sampai malam." },
+                { time: "21.30 - 22.30", title: "Cicil Tugas Unrika (30 Menit)", desc: "Ngetik draf bab buku Konsep Teknologi / Makalah Fisika." }
+            ],
+            "Selasa": [
+                { time: "04.30 - 05.30", title: "Bangun & Sholat Subuh", desc: "Tugas Rumah: **Jemur Baju**" },
+                { time: "05.30 - 08.00", title: "Berangkat & Persiapan Kantor", desc: "Perjalanan ke kantor." },
+                { time: "08.00 - 17.00", title: "Jam Kerja (PJK3 / Lapangan)", desc: "Inspeksi alat atau tugas kantor (Excel & Suket K3)." },
+                { time: "12.00 - 13.00", title: "Istirahat Siang & Micro-Learning", desc: "Makan siang + baca modul UT." },
+                { time: "17.00 - 18.30", title: "Transit & Persiapan ke Kampus", desc: "Pulang rumah & siap ke Unrika." },
+                { time: "18.30 - 21.30", title: "Kuliah Offline di Unrika", desc: "Perkuliahan tatap muka." },
+                { time: "21.30 - 22.30", title: "Cicil Tugas Unrika (30 Menit)", desc: "Ngetik draf bab buku Konsep Teknologi / Makalah Fisika." }
+            ],
+            "Rabu": [
+                { time: "04.30 - 05.30", title: "Bangun & Sholat Subuh", desc: "Tugas Rumah: **Sapu & Pel Lantai**" },
+                { time: "05.30 - 08.00", title: "Berangkat & Persiapan Kantor", desc: "Perjalanan ke kantor." },
+                { time: "08.00 - 17.00", title: "Jam Kerja (PJK3 / Lapangan)", desc: "Inspeksi alat / tugas sistem laporan kantor." },
+                { time: "12.00 - 13.00", title: "Istirahat Siang & Micro-Learning", desc: "Makan siang + baca modul UT." },
+                { time: "17.00 - 18.30", title: "Transit & Persiapan ke Kampus", desc: "Pulang rumah & siap ke Unrika." },
+                { time: "18.30 - 21.30", title: "Kuliah Offline di Unrika", desc: "Perkuliahan tatap muka." },
+                { time: "21.30 - 22.30", title: "Cicil Tugas Unrika (30 Menit)", desc: "Ngetik draf bab buku Konsep Teknologi / Makalah Fisika." }
+            ],
+            "Kamis": [
+                { time: "04.30 - 05.30", title: "Bangun & Sholat Subuh", desc: "Tugas Rumah: **Buang Sampah**" },
+                { time: "05.30 - 08.00", title: "Berangkat & Persiapan Kantor", desc: "Perjalanan ke kantor." },
+                { time: "08.00 - 17.00", title: "Jam Kerja (PJK3 / Lapangan)", desc: "Inspeksi alat atau administrasi Suket K3." },
+                { time: "12.00 - 13.00", title: "Istirahat Siang & Micro-Learning", desc: "Makan siang + baca modul UT." },
+                { time: "17.00 - 18.30", title: "Transit & Persiapan ke Kampus", desc: "Pulang rumah & siap ke Unrika." },
+                { time: "18.30 - 21.30", title: "Kuliah Offline di Unrika", desc: "Perkuliahan tatap muka." },
+                { time: "21.30 - 22.30", title: "Cicil Tugas Unrika (30 Menit)", desc: "Ngetik draf bab buku Konsep Teknologi / Makalah Fisika." }
+            ],
+            "Jumat": [
+                { time: "04.30 - 05.30", title: "Bangun & Sholat Subuh", desc: "Tugas Rumah: **Jemur Baju**" },
+                { time: "05.30 - 08.00", title: "Berangkat & Persiapan Kantor", desc: "Perjalanan ke kantor." },
+                { time: "08.00 - 17.00", title: "Jam Kerja (PJK3 / Lapangan)", desc: "Persiapan weekend & rapikan laporan kantor." },
+                { time: "12.00 - 13.00", title: "Istirahat Siang & Micro-Learning", desc: "Makan siang + baca modul UT." },
+                { time: "17.00 - 18.30", title: "Transit & Persiapan ke Kampus", desc: "Pulang rumah & siap ke Unrika." },
+                { time: "18.30 - 21.30", title: "Kuliah Offline di Unrika", desc: "Perkuliahan tatap muka terakhir minggu ini." },
+                { time: "21.30 - 22.30", title: "Cicil Tugas Unrika (30 Menit)", desc: "Ngetik draf bab buku Konsep Teknologi / Makalah Fisika." }
+            ],
+            "Sabtu": [
+                { time: "04.30 - 05.30", title: "Bangun & Sholat Subuh", desc: "Tugas Rumah: **Sapu & Pel Lantai**" },
+                { time: "08.00 - 13.00", title: "Jam Kerja Setengah Hari", desc: "Selesaikan sisa laporan & susun Suket K3 kantor." },
+                { time: "13.00 - 17.00", title: "Istirahat & Waktu Luang", desc: "Pulang ke rumah, makan siang, rebahan / santai." },
+                { time: "17.00 - Seterusnya", title: "Waktu Bebas Malam", desc: "Nongkrong santai atau istirahat total." }
+            ],
+            "Minggu": [
+                { time: "04.30 - 05.30", title: "Bangun & Sholat Subuh", desc: "Tugas Rumah: **Bersih-Bersih Ringan / Giliran Minggu**" },
+                { time: "13.00 - 15.00", title: "Slot Fokus Mandiri UT (2 Jam)", desc: "Ngerjain modul & tugas e-learning UT sendiri (lepas joki)." },
+                { time: "15.00 - 16.00", title: "Tugas Mandiri Unrika (1 Jam)", desc: "Fokus bikin tugas mandiri Fisika / draf buku." },
+                { time: "16.00 - Seterusnya", title: "Waktu Bebas & Reset Total", desc: "Santai, kumpul keluarga, siap tempur untuk hari Senin." }
+            ]
+        };
+
+        let currentActiveDay = "Senin";
+
+        function updateClock() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Jakarta' };
+            document.getElementById('live-time').innerText = now.toLocaleDateString('id-ID', options) + ' WIB';
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        function setDay(day) {
+            currentActiveDay = day;
+            document.getElementById('current-day-badge').innerText = day;
+            
+            document.querySelectorAll('.day-btn').forEach(btn => {
+                if(btn.innerText === day) {
+                    btn.className = "day-btn px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap bg-cyan-500 text-slate-950 transition-all";
+                } else {
+                    btn.className = "day-btn px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all";
+                }
+            });
+
+            renderTasks();
+            loadNote();
+        }
+
+        function renderTasks() {
+            const container = document.getElementById('task-list');
+            const tasks = scheduleData[currentActiveDay];
+            container.innerHTML = '';
+
+            tasks.forEach((task, index) => {
+                const taskId = `${currentActiveDay}-${index}`;
+                const isChecked = localStorage.getItem(taskId) === 'true';
+
+                const card = document.createElement('div');
+                card.className = `glass p-3.5 rounded-xl flex items-start gap-3 transition-all ${isChecked ? 'opacity-50 border-emerald-500/30 bg-emerald-950/10' : 'border-slate-800'}`;
+                
+                card.innerHTML = `
+                    <input type="checkbox" id="${taskId}" ${isChecked ? 'checked' : ''} onchange="toggleTask('${taskId}')" class="mt-1 w-5 h-5 accent-cyan-400 rounded cursor-pointer">
+                    <div class="flex-1">
+                        <span class="text-[11px] font-bold text-cyan-400 uppercase tracking-wider">${task.time}</span>
+                        <h3 class="text-sm font-bold text-slate-200 mt-0.5 ${isChecked ? 'line-through text-slate-400' : ''}">${task.title}</h3>
+                        <p class="text-xs text-slate-400 mt-1 leading-relaxed">${task.desc}</p>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            updateProgress();
+        }
+
+        function toggleTask(id) {
+            const checkbox = document.getElementById(id);
+            localStorage.setItem(id, checkbox.checked);
+            renderTasks();
+            checkAllCompleted();
+        }
+
+        function updateProgress() {
+            const tasks = scheduleData[currentActiveDay];
+            let completed = 0;
+            tasks.forEach((_, index) => {
+                if(localStorage.getItem(`${currentActiveDay}-${index}`) === 'true') {
+                    completed++;
+                }
+            });
+            const percent = Math.round((completed / tasks.length) * 100) || 0;
+            document.getElementById('progress-text').innerText = `${percent}%`;
+            document.getElementById('progress-bar').style.width = `${percent}%`;
+        }
+
+        function checkAllCompleted() {
+            const tasks = scheduleData[currentActiveDay];
+            let allDone = true;
+            tasks.forEach((_, index) => {
+                if(localStorage.getItem(`${currentActiveDay}-${index}`) !== 'true') {
+                    allDone = false;
+                }
+            });
+            if(allDone && tasks.length > 0) {
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            }
+        }
+
+        function saveNote() {
+            const noteText = document.getElementById('quick-note').value;
+            localStorage.setItem(`note-${currentActiveDay}`, noteText);
+        }
+
+        function loadNote() {
+            const savedNote = localStorage.getItem(`note-${currentActiveDay}`) || '';
+            document.getElementById('quick-note').value = savedNote;
+        }
+
+        // Initialize
+        renderTasks();
+        loadNote();
+    </script>
+</body>
+</html>
